@@ -22,7 +22,7 @@ class LanguageModel():
 
         for file in os.listdir(train_data):
             if file.endswith(".txt"):
-                with open(file, encoding='utf-8') as file:
+                with open(os.path.join(train_data, file), encoding='utf-8') as file:
                     data = file.read()
                     data = data.lower()
 
@@ -67,7 +67,8 @@ class LanguageModel():
                                                         save_best_only=True,
                                                         mode='auto')
 
-        self.model.fit(self.X, self.Y, batch_size=self.batch_size, verbose=1, nb_epoch=self.epoch, callbacks=[checkpoint])
+        self.model.fit(self.X, self.Y, batch_size=self.batch_size, verbose=1, nb_epoch=self.epoch,
+                       callbacks=[checkpoint])
 
 
 if __name__ == '__main__':
