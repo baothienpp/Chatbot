@@ -1,22 +1,30 @@
 import tensorflow as tf
+import os
 import numpy as np
 import argparse
 
 
 class LanguageModel():
 
-    def __init__(self, train_data):
-        self.X, self.Y, self.ix_to_char, self.char_to_ix, self.VOCAB_SIZE = self._build_dataset(train_data,
+    def __init__(self, data_dir, epoch, batch_size, out_dir):
+        self.data_dir = data_dir
+        self.epoch = epoch
+        self.batch_size = batch_size
+        self.out_dir = out_dir
+
+        self.X, self.Y, self.ix_to_char, self.char_to_ix, self.VOCAB_SIZE = self._build_dataset(self.data_dir,
                                                                                                 seq_length=50)
+        self.model = self._create_model()
 
     def _build_dataset(self, train_data, seq_length):
         X = []
         Y = []
 
-        # TODO loop through all file in folder and concate
-        with open(train_data, encoding='utf-8') as file:
-            data = file.read()
-            data = data.lower()
+        for file in os.listdir(train_data):
+            if file.endswith(".txt"):
+                with open(train_data, encoding='utf-8') as file:
+                    data = file.read()
+                    data = data.lower()
 
         chars = list(set(data))
         VOCAB_SIZE = len(chars)
@@ -53,11 +61,22 @@ class LanguageModel():
 
         return model
 
-    def train(self, model):
-        model.compile(loss="categorical_crossentropy", optimizer="adam")
-        model.fit(self.X, self.Y, batch_size=32, verbose=1, nb_epoch=1)
+    def train(self):
+        self.model.compile(loss="categorical_crossentropy", optimizer="adam")
+        checkpoint = tf.keras.callbacks.ModelCheckpoint('model-{epoch:03d}.h5', verbose=1, monitor='val_loss',
+                                                        save_best_only=True,
+                                                        mode='auto')
+
+        self.model.fit(self.X, self.Y, batch_size=self.batch_size, verbose=1, nb_epoch=self.epoch, callbacks=[checkpoint])
 
 
-model_instance = LanguageModel('dataset/shakespeare.txt')
-model = model_instance._create_model()
-model_instance.train(model)
+if __name__ == 'main':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--data', default='dataset/', help='Set path to dataset folder')
+    parser.add_argument('--epoch', default=200, type=int, help='Number of epochs')
+    parser.add_argument('--batch_size', default=32, type=int, help='Batch size')
+    parser.add_argument('-o', '--output', default='model/', help='Model output path')
+    args = parser.parse_args()
+
+    model = LanguageModel(args.data, args.epoch, args.batch_size, args.output)
+    model.train()
