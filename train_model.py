@@ -22,7 +22,7 @@ class LanguageModel():
 
         for file in os.listdir(train_data):
             if file.endswith(".txt"):
-                with open(train_data, encoding='utf-8') as file:
+                with open(file, encoding='utf-8') as file:
                     data = file.read()
                     data = data.lower()
 
