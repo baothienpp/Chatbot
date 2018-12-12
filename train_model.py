@@ -63,14 +63,14 @@ class LanguageModel():
 
     def train(self):
         self.model.compile(loss="categorical_crossentropy", optimizer="adam")
-        checkpoint = tf.keras.callbacks.ModelCheckpoint('model-{epoch:03d}.h5', verbose=1, monitor='val_loss',
+        checkpoint = tf.keras.callbacks.ModelCheckpoint('model-{epoch:03d}.h5', verbose=1, monitor='train_loss',
                                                         save_best_only=True,
                                                         mode='auto')
 
         self.model.fit(self.X, self.Y, batch_size=self.batch_size, verbose=1, nb_epoch=self.epoch, callbacks=[checkpoint])
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data', default='dataset/', help='Set path to dataset folder')
     parser.add_argument('--epoch', default=200, type=int, help='Number of epochs')
