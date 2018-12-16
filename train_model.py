@@ -3,14 +3,18 @@ import os
 import numpy as np
 import argparse
 
+TPU_WORKER = 'grpc://' + os.environ['COLAB_TPU_ADDR']
+tf.logging.set_verbosity(tf.logging.INFO)
+
 
 class LanguageModel():
 
-    def __init__(self, data_dir, epoch, batch_size, out_dir):
+    def __init__(self, data_dir, epoch, batch_size, out_dir, use_tpu):
         self.data_dir = data_dir
         self.epoch = epoch
         self.batch_size = batch_size
         self.out_dir = out_dir
+        self.use_tpu = use_tpu
 
         self.X, self.Y, self.ix_to_char, self.char_to_ix, self.VOCAB_SIZE = self._build_dataset(self.data_dir,
                                                                                                 seq_length=50)
@@ -59,9 +63,17 @@ class LanguageModel():
 
         model = tf.keras.models.Model(inputs=X, outputs=dense)
 
+        if self.use_tpu:
+            tpu_model = tf.contrib.tpu.keras_to_tpu_model(
+                model,
+                strategy=tf.contrib.tpu.TPUDistributionStrategy(
+                    tf.contrib.cluster_resolver.TPUClusterResolver(TPU_WORKER)))
+            return tpu_model
+
         return model
 
     def train(self):
+
         self.model.compile(loss="categorical_crossentropy", optimizer="adam")
         checkpoint = tf.keras.callbacks.ModelCheckpoint('model-{epoch:03d}.h5', verbose=1, monitor='train_loss',
                                                         save_best_only=True,
@@ -77,7 +89,8 @@ if __name__ == '__main__':
     parser.add_argument('--epoch', default=200, type=int, help='Number of epochs')
     parser.add_argument('--batch_size', default=32, type=int, help='Batch size')
     parser.add_argument('-o', '--output', default='model/', help='Model output path')
+    parser.add_argument('--use_tpu', action='store_true')
     args = parser.parse_args()
 
-    model = LanguageModel(args.data, args.epoch, args.batch_size, args.output)
+    model = LanguageModel(args.data, args.epoch, args.batch_size, args.output, args.use_tpu)
     model.train()
